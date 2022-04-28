@@ -1,7 +1,8 @@
 import express, { json } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { MongoCLient } from 'mongodb';
+import { MongoClient } from 'mongodb';
+import * as chalk from 'chalk';
 
 const app = express ();
 app.use(cors());
@@ -9,20 +10,15 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-const mongoCLient = new MongoCLient('mongodb://localhost:27017');
-let db = null;
+const mongoClient = new MongoClient("mongodb://localhost:2707");
+let database = null;
 
-const promise = mongoCLient.connect();
-promise.then(res  => {
-    db = mongoCLient.db('uol_chat');
-    console.log("Data base is connected!");
+mongoClient.connect().then(() => {
+    database = mongoClient.db('uol_chat');
+    console.log("Database is connected!");
+}).catch(() => {
+    console.log('Database connection error!');
 });
-
-db.collection('users').insertOne({
-    name: 'testName',
-    lestStatus: 55555
-});
-
 
 
 
