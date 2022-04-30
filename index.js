@@ -24,13 +24,20 @@ app.post('/participants', async (req, res) => {
 
     try {
 
+        const isValidParticipant = participantSchema.validate(participant);
         const mongoClient = new MongoClient(process.env.MONGO_URI);
-        const participantsCollection = mongoClient.db('bate-papo-uol').collection('participants');
+        const participantsCollection = mongoClient.db('bate-papo-uol-chat').collection('participants');
         const messagesCollection = mongoClient.db('bate-papo-uol').collection('messages');
 
         await mongoClient.connect();
         
         const participantNameInUse = await participantsCollection.findOne({ name: participant.name });
+
+        if (isValidParticipant.error !== null) {
+
+            return res.sendStatus(422);
+
+        }
 
         if (participantNameInUse !== null) {
 
@@ -51,7 +58,7 @@ app.post('/participants', async (req, res) => {
             to: 'Todos',
             text: 'Entra na sala...',
             type: 'status',
-            time: dayjs()
+            time: dayjs().format('HH:mm:ss')
 
         }); 
 
@@ -75,7 +82,7 @@ app.get('/participants', async (req, res) => {
         const mongoClient = new MongoClient(process.env.MONGO_URI);
         await mongoClient.connect();
 
-        const participantsCollection = mongoClient.db('bate-papo-uol').collection('participants');
+        const participantsCollection = mongoClient.db('bate-papo-uol-chat').collection('participants');
         const participants = await participantsCollection.find({}).toArray();
 
         await mongoClient.close();
@@ -88,6 +95,33 @@ app.get('/participants', async (req, res) => {
         ('Participants GET => Não tô me sentindo muito bem, Sr. Stark...');
 
     }
+
+});
+
+app.post('/messages', async (req, res) => {
+
+    const isValidMessage = messageSchema.validate(message);
+    const message = req.body;
+    const from = req.headers;
+
+    if (isValidMessage.error) {
+        return res.sendStatus(422);
+    }
+
+    try {
+
+        const mongoClient = new MongoClient(process.env.MONGO_URI);
+        await mongoClient.connect();
+
+    } catch (e) {
+
+        res.sendStatus(500, e);
+        
+    }
+
+});
+
+app.get('/messages', async (req, res) => {
 
 });
 
