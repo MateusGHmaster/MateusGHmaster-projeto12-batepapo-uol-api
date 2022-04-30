@@ -18,53 +18,78 @@ const messageSchema = joi.object({
     type: joi.string().valid('message', 'private_message')
 });
 
-/* let database = null; */
-
 app.post('/participants', async (req, res) => {
 
     const participant = req.body;
-    const mongoClient = new MongoClient(process.env.MONGO_URI);
-    const participantsCollection = mongoClient.db('bate-papo-uol').collection('participants');
-    const messagesCollection = mongoClient.db('bate-papo-uol').collection('messages');
 
-    await mongoClient.connect();
-    
-    const participantNameInUse = await participantsCollection.findOne({ name: participant.name });
+    try {
 
-    if (participantNameInUse !== null) {
+        const mongoClient = new MongoClient(process.env.MONGO_URI);
+        const participantsCollection = mongoClient.db('bate-papo-uol').collection('participants');
+        const messagesCollection = mongoClient.db('bate-papo-uol').collection('messages');
 
-        return res.sendStatus(409);
+        await mongoClient.connect();
+        
+        const participantNameInUse = await participantsCollection.findOne({ name: participant.name });
+
+        if (participantNameInUse !== null) {
+
+            return res.sendStatus(409);
+        
+        }
+
+        participantsCollection.insertOne({
+
+            ...participant,
+            lastStatus: Date.now 
+
+        });
+
+        messagesCollection.insertOne({
+
+            from: participant.name,
+            to: 'Todos',
+            text: 'Entra na sala...',
+            type: 'status',
+            time: dayjs()
+
+        }); 
+
+        mongoClient.close();
+        res.sendStatus(201);
+        console.log('Participants POST => OK!');
+
+    } catch (e) {
+
+        res.sendStatus(500);
+        console.log('Participants POST => Não tô me sentindo muito bem, Sr. Stark...');
 
     }
 
-    participantsCollection.insertOne({
-
-        ...participant,
-        lastStatus: Date.now 
-
-    });
-
-    messagesCollection.insertOne({
-
-        from: participant.name,
-        to: 'Todos',
-        text: 'Entra na sala...',
-        type: 'status',
-        time: dayjs()
-
-    }); 
-
-    mongoClient.close();
-    res.sendStatus(201);
-
 });
 
-/* mongoClient.connect().then(() => {
-    database = mongoClient.db('uol_chat');
-    console.log("Database is connected!");
-}).catch(() => {
-    console.log('Database connection error!');
-}); */
+app.get('/participants', async (req, res) => {
+
+    try {
+
+        const mongoClient = new MongoClient(process.env.MONGO_URI);
+        await mongoClient.connect();
+
+        const participantsCollection = mongoClient.db('bate-papo-uol').collection('participants');
+        const participants = await participantsCollection.find({}).toArray();
+
+        await mongoClient.close();
+        res.send(participants);
+        console.log('Participants GET => OK!');
+
+    } catch (e) {
+
+        res.sendStatus(500, e);
+        ('Participants GET => Não tô me sentindo muito bem, Sr. Stark...');
+
+    }
+
+});
 
 
 
