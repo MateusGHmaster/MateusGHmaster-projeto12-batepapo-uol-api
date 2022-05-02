@@ -131,9 +131,9 @@ app.post('/messages', async (req, res) => {
         const participantsCollection = mongoClient.db('bate-papo-uol-chat').collection('participants');
         const messagesCollection = mongoClient.db('bate-papo-uol-chat').collection('messages');
 
-        const isValidParticipant = await participantsCollection.findOne({ name: from });
+        const participantNameInUse = await participantsCollection.findOne({ name: from });
 
-        if (!isValidParticipant) {
+        if (!participantNameInUse) {
 
             return res.sendStatus(422);
 
@@ -196,6 +196,40 @@ app.get('/messages', async (req, res) => {
 
 });
 
+app.post('/status', async (req, res) => {
+
+    const participant = req.headers.user;
+
+    try {
+
+        const mongoClient = new MongoClient(process.env.MONGO_URI);
+        await mongoClient.connect();
+
+        const participantsCollection = mongoClient.db('bate-papo-uol-chat').collection('participants');
+        const participantNameInUse = await participantsCollection.findOne({ name: participant });
+
+        if (!participantNameInUse) {
+
+            return res.sendStatus(404);
+
+        }
+        
+        /* await participantsCollection.updateOne({
+    
+            _id: participantNameInUse._id
+            
+        }); */
+
+        await mongoClient.close();
+        res.sendStatus(200);
+
+    } catch (e) {
+
+        res.sendStatus(500);
+
+    }
+
+});
 
 
 app.listen(5000, () => {
