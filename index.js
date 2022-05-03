@@ -2,6 +2,7 @@ import express, { json } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { MongoClient } from 'mongodb';
+import { send, sendStatus } from 'express/lib/response';
 
 const app = express ();
 app.use(cors());
@@ -106,7 +107,7 @@ app.get('/participants', async (req, res) => {
     } catch (e) {
 
         res.sendStatus(500, e);
-        ('Participants GET => Não tô me sentindo muito bem, Sr. Stark...');
+        console.log('Participants GET => Não tô me sentindo muito bem, Sr. Stark...');
 
     }
 
@@ -214,24 +215,82 @@ app.post('/status', async (req, res) => {
 
         }
         
-        /* await participantsCollection.updateOne({
-    
-            _id: participantNameInUse._id
+        await participantsCollection.updateOne({
             
-        }); */
+            _id: participantNameInUse._id
+        }, {
+            $set: {
+                lastStatus: Date.now()
+            }
 
+        });
+
+        console.log('Status POST => OK!')
         await mongoClient.close();
         res.sendStatus(200);
 
     } catch (e) {
 
+        console.log('Status POST => Não tô me sentindo muito bem, Sr. Stark...');
         res.sendStatus(500);
 
     }
 
 });
 
+function disconnectAFK () {
+
+    setInterval(async () => {
+
+        try {
+
+            const mongoClient = new MongoClient(processs.env.MONGO_URI);
+            await mongoClient.connect();
+
+            const participantsCollection = mongoClient.db('bate-papo-uol-chat').collection('participants');
+            const messagesCollection = mongoClient.db('bate-papo-uol-chat').collection('messages');
+            const participants = await participantsCollection.find().toArray(); 
+
+            const connectionTimeOut = Date.now() - 10000; 
+
+            const AKFuser = participants.filter(participant => {
+
+                if (participant.lastStatus <= 10000) {
+
+                    await mongoClient.close();
+                    return {
+
+                        from: participant.name,
+                        to: 'Todos',
+                        text: 'sai da sala...',
+                        type: 'status',
+                        time: dayjs().format('HH:mm:ss')
+
+                    }
+
+                }
+                
+            });
+
+            await mongoClient.close();
+            console.log('AFK => OK!');
+            return sendStatus(200);
+
+        } catch (e) {
+
+            console.log('AFK => Não tô me sentindo muito bem, Sr. Stark...');
+            return sendStatus(404);
+
+        }
+
+    }, 15000);
+
+}
 
 app.listen(5000, () => {
+
     console.log('API running!');
+
 });
+
+disconnectAFK();
