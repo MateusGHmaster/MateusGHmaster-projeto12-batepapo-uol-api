@@ -27,7 +27,9 @@ const messageSchema = Joi.object({
 
 function filterUsersMessages (message, participant) {
 
-    if ((message.to === 'Todos') || (message.from === participant) || (message.to === participant)) {
+    const publicMessage = type === 'message';
+
+    if ((message.to === 'Todos') || (message.from === participant) || (message.to === participant) || (publicMessage)) {
         return true;
     } else {
         return false;
@@ -119,9 +121,10 @@ app.get('/participants', async (req, res) => {
 
 app.post('/messages', async (req, res) => {
 
-    const isValidMessage = messageSchema.validate(message);
     const message = req.body;
     const from = req.headers;
+
+    const isValidMessage = messageSchema.validate(message);
 
     if (isValidMessage.error) {
 
@@ -186,7 +189,7 @@ app.get('/messages', async (req, res) => {
 
         if (messagesCap !== null) {
             
-            return res.send(usersMessages).slice(-messagesCap);
+            return res.send(usersMessages);
 
         }
 
